@@ -1,28 +1,24 @@
 package frc.robot.subsystems.turret;
 
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation3d;
+import frc.robot.util.TunableNumber;
+import frc.robot.util.motorUtil.MotorConfig;
 
 public class TurretConstants {
-    public static final int absEncoderMotorCan = 0;
 
-    public static final double kP = .75;
-    public static final double kI = 0;
-    public static final double kD = 0;
-    public static final double kFF = .005;
-
-    public static boolean positionWrapping = true;
-
-    public static final double kMinRange = -0.2;
-    public static final double kMaxRange = 0.2;
-
-    public static final double setpoint1 = 0;
-    public static final double setpoint2 = 1;
-
-    public static final double setpointTolerance = 0.05;
-
-    public static final double kAbsEncoderOdometryFrequency = 100;
-    public static final boolean encoderInverted = false;
-    public static final double encoderPositionFactor = 1;
-
-    public static final Rotation2d rotationOffset = new Rotation2d(Math.PI);
+  public static final MotorConfig kTurretMotorConfig =
+      new MotorConfig("Subsystems/Turret/MotorIO/")
+          .motorCan(13)
+          .p(1.0)
+          .d(0.0)
+          .i(0.0)
+          .maxPower(0.05)
+          .minPower(-0.05);
+  public static final Translation3d kTurretOffset = new Translation3d(-.3, .2, .2);
+  public static final TunableNumber kTurretMinRotation =
+      new TunableNumber("Subsystems/Turret/minRotation", -3 * Math.PI / 4);
+  public static final TunableNumber kTurretMaxRotation =
+      new TunableNumber("Subsystems/Turret/maxRotation", 3 * Math.PI / 4);
+  public static double encoderPositionFactor = 2 * Math.PI / 5.23;
+  public static final int zeroSwitchPort = 0;
 }
