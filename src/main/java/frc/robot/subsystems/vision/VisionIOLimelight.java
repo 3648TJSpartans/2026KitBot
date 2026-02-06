@@ -14,13 +14,7 @@
 package frc.robot.subsystems.vision;
 
 import static frc.robot.subsystems.vision.VisionConstants.defualtPipeline;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Supplier;
-import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -31,6 +25,12 @@ import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.RobotController;
+import frc.robot.util.LimelightHelpers;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
 
 /** IO implementation for real Limelight hardware. */
 public class VisionIOLimelight implements VisionIO {
@@ -74,13 +74,17 @@ public class VisionIOLimelight implements VisionIO {
     return table.getDoubleTopic("tx").subscribe(0.0).getAsDouble();
   }
 
+  public double getTy() {
+    var table = NetworkTableInstance.getDefault().getTable(name);
+    return table.getDoubleTopic("tync").subscribe(0.0).getAsDouble();
+  }
+
   // If we're always gettign 0, the error is in here
   @Override
   public Pose2d getTagRelativePose() {
     double[] tableValues = botpose_targetSpaceSubscriber.get();
-    Logger.recordOutput(outputName, tableValues);
-    return new Pose2d(tableValues[2], -tableValues[0],
-        new Rotation2d(Units.degreesToRadians(tableValues[4])));
+    return new Pose2d(
+        tableValues[2], -tableValues[0], new Rotation2d(Units.degreesToRadians(tableValues[4])));
   }
 
   @Override
@@ -88,74 +92,37 @@ public class VisionIOLimelight implements VisionIO {
     // Update connection status based on whether an update has been seen in the last
     // 250ms
     inputs.connected =
-        ((RobotController.getFPGATime() - latencySubscriber.getLastChange()) / 1000) < 250;
-
-    // Update target observation
-    inputs.latestTargetObservation = new TargetObservation(
-        Rotation2d.fromDegrees(txSubscriber.get()), Rotation2d.fromDegrees(tySubscriber.get()));
-
-    // Update orientation for MegaTag 2
-    orientationPublisher
-        .accept(new double[] {rotationSupplier.get().getDegrees(), 0.0, 0.0, 0.0, 0.0, 0.0});
-    NetworkTableInstance.getDefault().flush(); // Increases network traffic but recommended by
-                                               // Limelight
-
-    // Read new pose observations from NetworkTables
+        ((RobotController.getFPGATime() - latencySubscriber.getLastChange()) / 1000) < 500;
+    inputs.cameraName = name;
     Set<Integer> tagIds = new HashSet<>();
     List<PoseObservation> poseObservations = new LinkedList<>();
 
-    for (var rawSample : megatag1Subscriber.readQueue()) {
-      if (rawSample.value.length == 0)
-        continue;
-      for (int i = 11; i < rawSample.value.length; i += 7) {
-        tagIds.add((int) rawSample.value[i]);
-      }
-      poseObservations.add(new PoseObservation(
-          // Timestamp, based on server timestamp of publish and latency
-          rawSample.timestamp * 1.0e-6 - (latencySubscriber.get()) * 1.0e-3,
-
-          // 3D pose estimate
-          parsePose(rawSample.value),
-
-          // Ambiguity, using only the first tag because ambiguity isn't applicable for
-          // multitag
-          rawSample.value.length >= 18 ? rawSample.value[17] : 0.0,
-
-          // Tag count
-          (int) rawSample.value[7],
-
-          // Average tag distance
-          rawSample.value[9],
-
-          // Observation type
-          PoseObservationType.MEGATAG_1));
+    boolean doRejectUpdate = false;
+    LimelightHelpers.SetRobotOrientation(name, rotationSupplier.get().getDegrees(), 0, 0, 0, 0, 0);
+    LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name);
+    if (mt2 == null) {
+      doRejectUpdate = true;
+    } else if (mt2.tagCount == 0) {
+      doRejectUpdate = true;
     }
-    for (var rawSample : megatag2Subscriber.readQueue()) {
-      if (rawSample.value.length == 0)
-        continue;
-      for (int i = 11; i < rawSample.value.length; i += 7) {
-        tagIds.add((int) rawSample.value[i]);
-      }
-      poseObservations.add(new PoseObservation(
-          // Timestamp, based on server timestamp of publish and latency
-          rawSample.timestamp * 1.0e-6 - rawSample.value[6] * 1.0e-3,
-
-          // 3D pose estimate
-          parsePose(rawSample.value),
-
-          // Ambiguity, zeroed because the pose is already disambiguated
-          0.0,
-
-          // Tag count
-          (int) rawSample.value[7],
-
-          // Average tag distance
-          rawSample.value[9],
-
-          // Observation type
-          PoseObservationType.MEGATAG_2));
+    if (!doRejectUpdate) {
+      poseObservations.add(mt2.getAsObservartion());
+      inputs.hasSeenTarget = true;
     }
+    doRejectUpdate = false;
+    if (VisionConstants.usingMT1) {
+      LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
+      if (mt1 == null) {
+        doRejectUpdate = true;
+      } else if (mt1.tagCount == 0) {
+        doRejectUpdate = true;
+      }
+      if (!doRejectUpdate) {
 
+        poseObservations.add(mt1.getAsObservartion());
+        inputs.hasSeenTarget = true;
+      }
+    }
     // Save pose observations to inputs object
     inputs.poseObservations = new PoseObservation[poseObservations.size()];
     for (int i = 0; i < poseObservations.size(); i++) {
@@ -172,15 +139,26 @@ public class VisionIOLimelight implements VisionIO {
 
   /** Parses the 3D pose from a Limelight botpose array. */
   private static Pose3d parsePose(double[] rawLLArray) {
-    return new Pose3d(rawLLArray[0], rawLLArray[1], rawLLArray[2],
-        new Rotation3d(Units.degreesToRadians(rawLLArray[3]), Units.degreesToRadians(rawLLArray[4]),
+    return new Pose3d(
+        rawLLArray[0],
+        rawLLArray[1],
+        rawLLArray[2],
+        new Rotation3d(
+            Units.degreesToRadians(rawLLArray[3]),
+            Units.degreesToRadians(rawLLArray[4]),
             Units.degreesToRadians(rawLLArray[5])));
   }
 
   @Override
   public void setPipeline(int pipeline) {
-    var table = NetworkTableInstance.getDefault().getTable(name);
-    table.getEntry("pipeline").setNumber(pipeline);
+    // var table = NetworkTableInstance.getDefault().getTable(name);
+    // table.getEntry("pipeline").setNumber(pipeline);
+    LimelightHelpers.setPipelineIndex(name, pipeline);
+  }
+
+  @Override
+  public int getPipeline() {
+    return (int) LimelightHelpers.getCurrentPipelineIndex(name);
   }
 
   @Override

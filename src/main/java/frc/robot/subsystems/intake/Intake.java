@@ -1,29 +1,38 @@
 package frc.robot.subsystems.intake;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.subsystems.motorUtils.MotorIO;
+import frc.robot.Constants.Status;
+import frc.robot.util.motorUtil.RelEncoderSparkMax;
+import frc.robot.util.motorUtil.SingleSolenoidIO;
 
-public class Intake extends SubsystemBase {
+public class Intake extends SingleSolenoidIO {
 
-    private MotorIO intakeMotor;
-    private MotorIO feedMotor;
-    private MotorIO groundIntakeMotor;
+  private RelEncoderSparkMax roller;
 
-    public Intake(MotorIO feedMotor, MotorIO intakeMotor, MotorIO groundIntakeMotor) {
-        this.feedMotor = feedMotor;
-        this.intakeMotor = intakeMotor;
-        this.groundIntakeMotor = groundIntakeMotor;
-    }
+  public Intake() {
+    super(IntakeConstants.solenoidChannel, "Subsystems/Intake");
+    roller = new RelEncoderSparkMax(IntakeConstants.intakeRollerConfig);
+  }
 
-    public void runIntake(double speed) {
-        intakeMotor.setPower(speed);
-    }
+  public void setRollers(double speed) {
+    roller.setPower(speed);
+  }
 
-    public void runFeed(double speed) {
-        feedMotor.setPower(speed);
-    }
+  public void stopRollers() {
+    roller.stop();
+  }
 
-    public void runGroundIntake(double speed) {
-        groundIntakeMotor.setPower(speed);
-    }
+  public void setSolenoidAndRollerUp() {
+    setSolenoid(false);
+    roller.stop();
+  }
+
+  public void setSolenoidAndRollerDown() {
+    setSolenoid(true);
+    roller.setPower(IntakeConstants.intakeRollerSpeed.get());
+  }
+
+  @Override
+  public Status getStatus() {
+    return super.getStatus();
+  }
 }
