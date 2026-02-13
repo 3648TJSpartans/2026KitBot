@@ -2,7 +2,7 @@ package frc.robot.commands;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.commands.goToCommands.goToConstants;
+
 import frc.robot.subsystems.drive.Drive;
 import java.util.function.Supplier;
 
@@ -16,17 +16,7 @@ public class DriveForwardTy extends Command {
     addRequirements(m_drive);
   }
 
-  @Override
-  public void execute() {
-    double targetTy = 23 - m_ty.get();
-    double targetSpeed = -goToConstants.driveController.calculate(targetTy);
-    m_drive.runVelocity(new ChassisSpeeds(targetSpeed, 0.0, 0.0));
-  }
 
-  @Override
-  public boolean isFinished() {
-    return goToConstants.driveController.atGoal();
-  }
 
   @Override
   public void end(boolean interrupted) {
