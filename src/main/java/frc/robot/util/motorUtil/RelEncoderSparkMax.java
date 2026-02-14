@@ -30,7 +30,7 @@ public class RelEncoderSparkMax extends MotorIO {
   public RelEncoderSparkMax(MotorConfig motorConfig) {
     super(motorConfig.name());
     m_motorConfig = motorConfig;
-    motor = new SparkMax(motorConfig.motorCan(), MotorType.kBrushless);
+    motor = new SparkMax(motorConfig.motorCan(), MotorType.kBrushed);
     motorController = motor.getClosedLoopController();
     encoder = motor.getEncoder();
     name = getName();

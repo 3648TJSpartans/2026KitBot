@@ -808,6 +808,8 @@ public class RobotContainer {
         private final Drive m_drive;
         private boolean override;
         private boolean endgameClosed = true;
+        private final Intake m_intake;
+        public final Hopper m_hopper;
 
         // Controller
         private final CommandXboxController m_driveController =
@@ -828,6 +830,8 @@ public class RobotContainer {
 
         public RobotContainer() {
             m_drive = new Drive(new DriveIOSpark(), new GyroIONavX());
+            m_intake = new Intake();
+            m_hopper = new Hopper();
 
             configureButtonBindings();
 
@@ -845,6 +849,10 @@ public class RobotContainer {
                 // configureAutos();
 
                 configureDrive();
+
+                configureIntake();
+
+                configureHopper();
               
                 // configureTurret();
                 m_copilotController.rightTrigger()
@@ -918,6 +926,14 @@ public class RobotContainer {
         public void toggleOverride() {
                 override = !override;
                 Logger.recordOutput("Override", override);
+        }
+
+        public void configureIntake() {
+                m_intake.setDefaultCommand(Commands.run(() -> m_intake.setPower(m_testController.getLeftY()), m_intake));
+        }
+       
+        public void configureHopper(){
+                m_hopper.setDefaultCommand(Commands.run(() -> m_hopper.setPower(m_testController.getRightX()), m_hopper));
         }
 
         private void configureCommandGroups() {
