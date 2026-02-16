@@ -164,8 +164,7 @@ public class Vision extends SubsystemBase implements Statusable {
         // Send vision observation
         consumer.accept(
             observation.pose().toPose2d(),
-            observation.timestamp(),
-            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+            observation.timestamp());
       }
 
       // Log camera datadata
@@ -196,7 +195,7 @@ public class Vision extends SubsystemBase implements Statusable {
       double linearStdDev = linearStdDevBaseline * stdDevFactor;
       double angularStdDev = angularStdDevBaseline * stdDevFactor;
       targetSpaceConsumer.accept(
-          targetspaceObservation, VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+          targetspaceObservation);
     }
     // Log summary data
     Logger.recordOutput(
@@ -216,13 +215,12 @@ public class Vision extends SubsystemBase implements Statusable {
   public static interface VisionConsumer {
     public void accept(
         Pose2d visionRobotPoseMeters,
-        double timestampSeconds,
-        Matrix<N3, N1> visionMeasurementStdDevs);
+        double timestampSeconds);
   }
 
   @FunctionalInterface
   public static interface TimelessVisionConsumer {
-    public void accept(Pose2d visionRobotPoseMeters, Matrix<N3, N1> visionMeasurementStdDevs);
+    public void accept(Pose2d visionRobotPoseMeters);
   }
 
   public void setPipeline(int pipeline, int cameraIndex) {

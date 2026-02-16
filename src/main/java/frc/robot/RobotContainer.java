@@ -731,71 +731,33 @@
 
 package frc.robot;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.commands.PathPlannerAuto;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
-import frc.robot.commands.ledCommands.AutoLEDCommand;
-import frc.robot.commands.ledCommands.TeleopLEDCommand;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveIOSpark;
-import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
-import frc.robot.subsystems.leds.LedSubsystem;
-import frc.robot.subsystems.turret.Turret;
-
+import frc.robot.subsystems.intake.Hopper;
+import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.vision.Vision;
-import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.VisionIOLimelight;
+import frc.robot.subsystems.vision.Vision.TimelessVisionConsumer;
+import frc.robot.subsystems.vision.Vision.VisionConsumer;
+import frc.robot.subsystems.vision.VisionConstants;
 //import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.TunableNumber;
-import frc.robot.subsystems.intake.*;
-
-import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.Waypoint;
-import com.revrobotics.AbsoluteEncoder;
-import com.revrobotics.RelativeEncoder;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.PathConstraints;
-
-// import frc.robot.subsystems.coralSubsystems.coralIntake.CoralIntake;
-// import frc.robot.subsystems.coralSubsystems.coralIntake.CoralIntakeIO;
-// import frc.robot.subsystems.coralSubsystems.coralIntake.CoralIntakeIOSparkMax;
-// import frc.robot.subsystems.coralSubsystems.elevator.Elevator;
-// import frc.robot.subsystems.coralSubsystems.CoralConstants;
-// import frc.robot.subsystems.coralSubsystems.elevator.ElevatorIO;
-// import frc.robot.subsystems.coralSubsystems.elevator.ElevatorIOSparkMax;
-
-import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
-
-import java.util.List;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-import org.littletonrobotics.junction.Logger;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -810,6 +772,8 @@ public class RobotContainer {
         private boolean endgameClosed = true;
         private final Intake m_intake;
         public final Hopper m_hopper;
+        private final Vision m_vision;
+       
 
         // Controller
         private final CommandXboxController m_driveController =
@@ -830,12 +794,19 @@ public class RobotContainer {
 
         public RobotContainer() {
             m_drive = new Drive(new DriveIOSpark(), new GyroIONavX());
+             m_vision =
+            new Vision(
+                m_drive::addVisionMeasurement,
+                m_drive::addTargetSpaceVisionMeasurement,
+                new
+                VisionIOLimelight("limelight-two",
+                m_drive::getRotation));
             m_intake = new Intake();
             m_hopper = new Hopper();
-
             configureButtonBindings();
-
         }
+        
+        
         /**
          * Use this method to define your button->command mappings. Buttons can be created by
          * instantiating a {@link GenericHID} or one of its subclasses
@@ -857,11 +828,6 @@ public class RobotContainer {
                 // configureTurret();
                 m_copilotController.rightTrigger()
                                 .onTrue(new InstantCommand(() -> toggleOverride()));
-                /*
-                 * m_led.setLedPattern(LedConstants.elevatorHeight, m_led.elevatorBuffer);
-                 * m_led.setLedPattern(LedConstants.teal, m_led.leftGuideBuffer);
-                 * m_led.setLedPattern(LedConstants.yellow, m_led.rightGuideBuffer);
-                 */
         }
 
         private void configureAlerts() {
@@ -915,7 +881,11 @@ public class RobotContainer {
 
                 // Switch to X pattern when X button is pressed
                 m_driveController.x().onTrue(Commands.runOnce(m_drive::stop, m_drive));
+               
+               // Goal make the KitBot turn 180° then shoot
+               // task 1. make the KitBot turn 
 
+               
                 // Reset gyro to 0° when A button is pressed
                 m_driveController.a().onTrue(Commands.runOnce(() -> m_drive.setPose(
                                 new Pose2d(m_drive.getPose().getTranslation(), new Rotation2d())),
@@ -929,17 +899,18 @@ public class RobotContainer {
         }
 
         public void configureIntake() {
-                m_intake.setDefaultCommand(Commands.run(() -> m_intake.setPower(m_testController.getLeftY()), m_intake));
+                TunableNumber intakeSpeed = new TunableNumber("Subsystems/Intake/setSpeed", 1);
+                m_intake.setDefaultCommand(Commands.run(() -> m_intake.setPower(-m_driveController.getLeftTriggerAxis() * intakeSpeed.get()), m_intake));
         }
        
         public void configureHopper(){
-                m_hopper.setDefaultCommand(Commands.run(() -> m_hopper.setPower(m_testController.getRightX()), m_hopper));
+                TunableNumber hopperSpeed = new TunableNumber("Subsystems/Hopper/setSpeed", 1);
+                m_hopper.setDefaultCommand(Commands.run(() -> m_hopper.setPower(m_driveController.getRightTriggerAxis() * hopperSpeed.get()), m_hopper));
         }
 
         private void configureCommandGroups() {
 
         }
-
         private Command controllerRumbleCommand() {
                 return Commands.startEnd(() -> {
                         m_driveController.getHID().setRumble(RumbleType.kBothRumble, 1.0);
