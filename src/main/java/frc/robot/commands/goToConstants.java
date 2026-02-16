@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.TunableNumber;
 
 public class goToConstants {
@@ -56,7 +57,9 @@ public class goToConstants {
     public static final double fieldWidth = 8.042;
 
     public static final double shootCutoff = 4.282694;
-
+    private static final Translation3d blueHubPose =
+        new Translation3d(4.625594, 4.034536, 1.430425);
+    public static final Translation3d hubPose = AllianceFlipUtil.apply(blueHubPose);
     public static final double zone1 = 3;
     public static final double zone2 = 5.042;
     public static final Translation3d feedRight = new Translation3d(1.0, 1.5, 0.0);

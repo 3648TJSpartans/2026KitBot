@@ -84,8 +84,10 @@
 
 // /**
 //  * This class is where the bulk of the robot should be declared. Since Command-based is a
-//  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
-//  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
+//  * "declarative" paradigm, very little robot logic should actually be handled in the {@link
+// Robot}
+//  * periodic methods (other than the scheduler calls). Instead, the structure of the robot
+// (including
 //  * subsystems, commands, and button mappings) should be declared here.
 //  */
 // public class RobotContainer {
@@ -310,8 +312,10 @@
 //     m_copilotController.rightTrigger().onTrue(updateCommand);
 //     m_testController
 //         .povUp()
-//         .onTrue(new InstantCommand(() -> LoggedAnalogEncoder.updateZeros()).ignoringDisable(true));
-//     new Trigger(() -> DriverStation.isEnabled() && TuningUpdater.TUNING_MODE).onTrue(updateCommand);
+//         .onTrue(new InstantCommand(() ->
+// LoggedAnalogEncoder.updateZeros()).ignoringDisable(true));
+//     new Trigger(() -> DriverStation.isEnabled() &&
+// TuningUpdater.TUNING_MODE).onTrue(updateCommand);
 //     m_driveController.rightTrigger().onTrue(new InstantCommand(this::toggleOverride));
 
 //     /*
@@ -511,7 +515,8 @@
 //   public void configureAutoChooser() {
 
 //     autoChooser.addOption(
-//         "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(m_drive));
+//         "Drive Wheel Radius Characterization",
+// DriveCommands.wheelRadiusCharacterization(m_drive));
 //     autoChooser.addOption(
 //         "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(m_drive));
 //     autoChooser.addOption(
@@ -565,15 +570,18 @@
 //     m_testController
 //         .a()
 //         .onTrue(Commands.runOnce(() -> m_hopper.setSpeed(IntakeConstants.hopperSpeed.get())))
-//         .onFalse(Commands.runOnce(() -> m_hopper.setSpeed(IntakeConstants.hopperSlowSpeed.get())));
+//         .onFalse(Commands.runOnce(() ->
+// m_hopper.setSpeed(IntakeConstants.hopperSlowSpeed.get())));
 //     m_testController
 //         .povLeft()
 //         .onTrue(Commands.runOnce(() -> m_hopper.setSpeed(IntakeConstants.hopperSpeed.get())))
-//         .onFalse(Commands.runOnce(() -> m_hopper.setSpeed(IntakeConstants.hopperSlowSpeed.get())));
+//         .onFalse(Commands.runOnce(() ->
+// m_hopper.setSpeed(IntakeConstants.hopperSlowSpeed.get())));
 //     m_testController
 //         .povRight()
 //         .onTrue(Commands.runOnce(() -> m_hopper.setSpeed(IntakeConstants.hopperSpeed.get())))
-//         .onFalse(Commands.runOnce(() -> m_hopper.setSpeed(IntakeConstants.hopperSlowSpeed.get())));
+//         .onFalse(Commands.runOnce(() ->
+// m_hopper.setSpeed(IntakeConstants.hopperSlowSpeed.get())));
 
 //     m_hopper.setDefaultCommand(
 //         Commands.run(() -> m_hopper.setSpeed(IntakeConstants.hopperSlowSpeed.get()), m_hopper));
@@ -714,8 +722,6 @@
 //   }
 // }
 
-
-
 // Copyright 2021-2025 FRC 6328
 // http://github.com/Mechanical-Advantage
 //
@@ -731,9 +737,6 @@
 
 package frc.robot;
 
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -746,6 +749,8 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.RotateTo;
+import frc.robot.commands.goToConstants.PoseConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveIOSpark;
 import frc.robot.subsystems.drive.GyroIONavX;
@@ -753,11 +758,10 @@ import frc.robot.subsystems.intake.Hopper;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIOLimelight;
-import frc.robot.subsystems.vision.Vision.TimelessVisionConsumer;
-import frc.robot.subsystems.vision.Vision.VisionConsumer;
-import frc.robot.subsystems.vision.VisionConstants;
-//import frc.robot.util.AllianceFlipUtil;
+// import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.TunableNumber;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -766,159 +770,189 @@ import frc.robot.util.TunableNumber;
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-        // Subsystems
-        private final Drive m_drive;
-        private boolean override;
-        private boolean endgameClosed = true;
-        private final Intake m_intake;
-        public final Hopper m_hopper;
-        private final Vision m_vision;
-       
+  // Subsystems
+  private final Drive m_drive;
+  private boolean override;
+  private boolean endgameClosed = true;
+  private final Intake m_intake;
+  public final Hopper m_hopper;
+  private final Vision m_vision;
 
-        // Controller
-        private final CommandXboxController m_driveController =
-                        new CommandXboxController(Constants.kDriverControllerPort);
-        private final CommandXboxController m_copilotController =
-                        new CommandXboxController(Constants.kCopilotControllerPort);
-        private final CommandXboxController m_testController =
-                        new CommandXboxController(Constants.kTestControllerPort);
+  // Controller
+  private final CommandXboxController m_driveController =
+      new CommandXboxController(Constants.kDriverControllerPort);
+  private final CommandXboxController m_copilotController =
+      new CommandXboxController(Constants.kCopilotControllerPort);
+  private final CommandXboxController m_testController =
+      new CommandXboxController(Constants.kTestControllerPort);
 
-        // Alerts
-        private final LoggedNetworkNumber endgameAlert1 =
-                        new LoggedNetworkNumber("/SmartDashboard/Endgame Alert #1", 30.0);
-        private final LoggedNetworkNumber endgameAlert2 =
-                        new LoggedNetworkNumber("/SmartDashboard/Endgame Alert #2", 15.0);
-        private final LoggedNetworkNumber endgameAlert3 =
-                        new LoggedNetworkNumber("/SmartDashboard/Endgame Alert #3", 5.0);
+  // Alerts
+  private final LoggedNetworkNumber endgameAlert1 =
+      new LoggedNetworkNumber("/SmartDashboard/Endgame Alert #1", 30.0);
+  private final LoggedNetworkNumber endgameAlert2 =
+      new LoggedNetworkNumber("/SmartDashboard/Endgame Alert #2", 15.0);
+  private final LoggedNetworkNumber endgameAlert3 =
+      new LoggedNetworkNumber("/SmartDashboard/Endgame Alert #3", 5.0);
 
+  public RobotContainer() {
+    m_drive = new Drive(new DriveIOSpark(), new GyroIONavX());
+    m_vision =
+        new Vision(
+            m_drive::addVisionMeasurement,
+            m_drive::addTargetSpaceVisionMeasurement,
+            new VisionIOLimelight("limelight-two", m_drive::getRotation));
+    m_intake = new Intake();
+    m_hopper = new Hopper();
+    configureButtonBindings();
+  }
 
-        public RobotContainer() {
-            m_drive = new Drive(new DriveIOSpark(), new GyroIONavX());
-             m_vision =
-            new Vision(
-                m_drive::addVisionMeasurement,
-                m_drive::addTargetSpaceVisionMeasurement,
-                new
-                VisionIOLimelight("limelight-two",
-                m_drive::getRotation));
-            m_intake = new Intake();
-            m_hopper = new Hopper();
-            configureButtonBindings();
-        }
-        
-        
-        /**
-         * Use this method to define your button->command mappings. Buttons can be created by
-         * instantiating a {@link GenericHID} or one of its subclasses
-         * ({@link edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it
-         * to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-         */
+  /**
+   * Use this method to define your button->command mappings. Buttons can be created by
+   * instantiating a {@link GenericHID} or one of its subclasses ({@link
+   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
+   * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
+   */
+  private void configureButtonBindings() {
+    // configureAutos();
 
-    
+    configureDrive();
 
-        private void configureButtonBindings() {
-                // configureAutos();
+    configureIntake();
 
-                configureDrive();
+    configureHopper();
 
-                configureIntake();
+    // configureTurret();
+    m_copilotController.rightTrigger().onTrue(new InstantCommand(() -> toggleOverride()));
+  }
 
-                configureHopper();
-              
-                // configureTurret();
-                m_copilotController.rightTrigger()
-                                .onTrue(new InstantCommand(() -> toggleOverride()));
-        }
+  private void configureAlerts() {
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
+        .onTrue(
+            controllerRumbleCommand()
+                .withTimeout(0.5)
+                .andThen(Commands.waitSeconds(4.75))
+                .repeatedly()
+                .withTimeout(15)
 
-        private void configureAlerts() {
-                new Trigger(() -> DriverStation.isTeleopEnabled()
-                                && DriverStation.getMatchTime() > 0
-                                && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
-                                                .onTrue(controllerRumbleCommand().withTimeout(0.5)
-                                                                .andThen(Commands.waitSeconds(4.75))
-                                                                .repeatedly().withTimeout(15)
+            // .beforeStarting(() -> leds.endgameAlert = true)
+            // .finallyDo(() -> leds.endgameAlert = false)
+            );
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
+        .onTrue(
+            controllerRumbleCommand()
+                .withTimeout(0.1)
+                .andThen(Commands.waitSeconds(0.1))
+                .repeatedly()
+                .withTimeout(8)
+            // .beforeStarting(() -> leds.endgameAlert = true)
+            // .finallyDo(() -> leds.endgameAlert = false)
+            );
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
+        .onTrue(
+            controllerRumbleCommand()
+                .withTimeout(0.2)
+                .andThen(Commands.waitSeconds(0.3))
+                .repeatedly()
+                .withTimeout(10)
+            // .beforeStarting(() -> leds.endgameAlert = true)
+            // .finallyDo(() -> leds.endgameAlert = false)
+            );
+    // Countdown
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert3.get()))
+        .onTrue(
+            controllerRumbleCommand()
+                .withTimeout(0.8)
+                .andThen(Commands.waitSeconds(0.2))
+                .repeatedly()
+                .withTimeout(5)
+            // .beforeStarting(() -> leds.endgameAlert = true)
+            // .finallyDo(() -> leds.endgameAlert = false)
+            );
+  }
 
-                                                // .beforeStarting(() -> leds.endgameAlert = true)
-                                                // .finallyDo(() -> leds.endgameAlert = false)
-                                                );
-                new Trigger(() -> DriverStation.isTeleopEnabled()
-                                && DriverStation.getMatchTime() > 0
-                                && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
-                                                .onTrue(controllerRumbleCommand().withTimeout(0.1)
-                                                                .andThen(Commands.waitSeconds(0.1))
-                                                                .repeatedly().withTimeout(8)
-                                                // .beforeStarting(() -> leds.endgameAlert = true)
-                                                // .finallyDo(() -> leds.endgameAlert = false)
-                                                );
-                new Trigger(() -> DriverStation.isTeleopEnabled()
-                                && DriverStation.getMatchTime() > 0
-                                && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
-                                                .onTrue(controllerRumbleCommand().withTimeout(0.2)
-                                                                .andThen(Commands.waitSeconds(0.3))
-                                                                .repeatedly().withTimeout(10)
-                                                // .beforeStarting(() -> leds.endgameAlert = true)
-                                                // .finallyDo(() -> leds.endgameAlert = false)
-                                                );
-                // Countdown
-                new Trigger(() -> DriverStation.isTeleopEnabled()
-                                && DriverStation.getMatchTime() > 0
-                                && DriverStation.getMatchTime() <= Math.round(endgameAlert3.get()))
-                                                .onTrue(controllerRumbleCommand().withTimeout(0.8)
-                                                                .andThen(Commands.waitSeconds(0.2))
-                                                                .repeatedly().withTimeout(5)
-                                                // .beforeStarting(() -> leds.endgameAlert = true)
-                                                // .finallyDo(() -> leds.endgameAlert = false)
-                                                );
+  public void configureDrive() {
+    // Default command, normal field-relative drive
+    m_drive.setDefaultCommand(
+        DriveCommands.arcadeDrive(
+            m_drive, () -> -m_driveController.getLeftY(), () -> -m_driveController.getRightX()));
 
-        }
+    // Switch to X pattern when X button is pressed
+    m_driveController.x().onTrue(Commands.runOnce(m_drive::stop, m_drive));
 
+    // Goal make the KitBot turn 180° then shoot
+    // task 1. make the KitBot turn
 
-        public void configureDrive() {
-                // Default command, normal field-relative drive
-                m_drive.setDefaultCommand(DriveCommands.arcadeDrive(m_drive,
-                                () -> -m_driveController.getLeftY(),
-                                () -> -m_driveController.getRightX()));
+    // Reset gyro to 0° when A button is pressed
+    m_driveController
+        .a()
+        .onTrue(
+            Commands.runOnce(
+                    () ->
+                        m_drive.setPose(
+                            new Pose2d(m_drive.getPose().getTranslation(), new Rotation2d())),
+                    m_drive)
+                .ignoringDisable(true));
+    m_driveController
+        .y()
+        .whileTrue(
+            new RotateTo(
+                m_drive,
+                () ->
+                    PoseConstants.hubPose
+                        .toTranslation2d()
+                        .minus(m_drive.getPose().getTranslation())
+                        .getAngle()
+                        .getRadians()));
+  }
 
-                // Switch to X pattern when X button is pressed
-                m_driveController.x().onTrue(Commands.runOnce(m_drive::stop, m_drive));
-               
-               // Goal make the KitBot turn 180° then shoot
-               // task 1. make the KitBot turn 
+  public void toggleOverride() {
+    override = !override;
+    Logger.recordOutput("Override", override);
+  }
 
-               
-                // Reset gyro to 0° when A button is pressed
-                m_driveController.a().onTrue(Commands.runOnce(() -> m_drive.setPose(
-                                new Pose2d(m_drive.getPose().getTranslation(), new Rotation2d())),
-                                m_drive).ignoringDisable(true));
-        }
+  public void configureIntake() {
+    TunableNumber intakeSpeed = new TunableNumber("Subsystems/Intake/setSpeed", 1);
+    m_intake.setDefaultCommand(
+        Commands.run(
+            () -> m_intake.setPower(-m_driveController.getLeftTriggerAxis() * intakeSpeed.get()),
+            m_intake));
+  }
 
+  public void configureHopper() {
+    TunableNumber hopperSpeed = new TunableNumber("Subsystems/Hopper/setSpeed", 1);
+    m_hopper.setDefaultCommand(
+        Commands.run(
+            () -> m_hopper.setPower(m_driveController.getRightTriggerAxis() * hopperSpeed.get()),
+            m_hopper));
+  }
 
-        public void toggleOverride() {
-                override = !override;
-                Logger.recordOutput("Override", override);
-        }
+  private void configureCommandGroups() {}
 
-        public void configureIntake() {
-                TunableNumber intakeSpeed = new TunableNumber("Subsystems/Intake/setSpeed", 1);
-                m_intake.setDefaultCommand(Commands.run(() -> m_intake.setPower(-m_driveController.getLeftTriggerAxis() * intakeSpeed.get()), m_intake));
-        }
-       
-        public void configureHopper(){
-                TunableNumber hopperSpeed = new TunableNumber("Subsystems/Hopper/setSpeed", 1);
-                m_hopper.setDefaultCommand(Commands.run(() -> m_hopper.setPower(m_driveController.getRightTriggerAxis() * hopperSpeed.get()), m_hopper));
-        }
-
-        private void configureCommandGroups() {
-
-        }
-        private Command controllerRumbleCommand() {
-                return Commands.startEnd(() -> {
-                        m_driveController.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                        m_copilotController.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                }, () -> {
-                        m_driveController.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                        m_copilotController.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                });
-        }
-
+  private Command controllerRumbleCommand() {
+    return Commands.startEnd(
+        () -> {
+          m_driveController.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+          m_copilotController.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+        },
+        () -> {
+          m_driveController.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+          m_copilotController.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+        });
+  }
 }
