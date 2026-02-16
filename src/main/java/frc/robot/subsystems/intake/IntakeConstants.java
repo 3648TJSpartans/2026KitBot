@@ -37,4 +37,10 @@ public class IntakeConstants {
       new TunableNumber("Subsystems/Intake/hopperSlowSpeed", 0);
 
   public static final int solenoidChannel = 1;
+
+public static final MotorConfig Intake2MotorConfig = 
+new MotorConfig("Subsystems/Intake/Intake2");
+
 }
+
+
